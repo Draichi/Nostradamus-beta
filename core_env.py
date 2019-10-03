@@ -21,6 +21,8 @@ class TradingEnv(gym.Env):
         self.datapoints = config['datapoints']
         self.df_complete = config['df_complete']
         self.df_features = config['df_features']
+        self.initial_balance = config['variables']['initial_account_balance']
+        self.commission = config['variables']['commission']
         self.shares_held = {}
         self.shares_bought = {}
         self.shares_sold = {}
@@ -28,9 +30,6 @@ class TradingEnv(gym.Env):
         self.initial_bought = {}
         self.trades = {}
         self.current_price = {}
-
-        self.initial_balance = 5000 # !
-        self.commission = 0.002 # !
 
         # action space = buy and sell for each asset, pĺus hold position
         action_space = 1 + len(self.assets_list) * 2
@@ -102,8 +101,8 @@ class TradingEnv(gym.Env):
 
     def _reset_balance(self):
         self._reset_cost_n_sales()
-        self.balance = 5000
-        self.net_worth = 5000
+        self.balance = self.initial_balance
+        self.net_worth = self.initial_balance
         for asset in self.assets_list:
             self.shares_held[asset] = 0.0
             self.shares_bought[asset] = 0.0
