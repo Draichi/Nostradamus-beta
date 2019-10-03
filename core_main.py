@@ -1,6 +1,7 @@
 import ray
 import collections
 import os
+import json
 import pickle
 import pandas as pd
 from utils import get_datasets
@@ -53,10 +54,18 @@ class Nostradamus:
                 'granularity': self.granularity,
                 'datapoints': self.datapoints,
                 'df_complete': {},
-                'df_features': {}
+                'df_features': {},
+                'variables': {}
             },
         }
+        self.add_variables_to_config_spec()
         self.add_dfs_to_config_spec(df_type=df_type)
+
+    def add_variables_to_config_spec(self):
+        connection = open('variables.json', 'r')
+        variables = json.load(connection)
+        connection.close()
+        self.config_spec['env_config']['variables'] = variables
 
     def add_dfs_to_config_spec(self, df_type):
         for asset in self.assets:
