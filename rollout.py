@@ -17,6 +17,7 @@ from ray.rllib.env import MultiAgentEnv
 from ray.rllib.env.base_env import _DUMMY_AGENT_ID
 from ray.rllib.evaluation.episode import _flatten_action
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
+from ray.tune.registry import register_env
 from ray.tune.util import merge_dicts
 
 
@@ -140,16 +141,30 @@ def rollout(agent, env_name, num_steps, no_render=True):
 
 
 if __name__ == "__main__":
+    from core_env import TradingEnv
     ray.init()
-
+    assets = False
+    currency = False
+    granularity = False
+    datapoints = False
+    config = {
+        'assets': assets,
+        'currency': currency,
+        'granularity': granularity,
+        'datapoints': datapoints,
+        'df_complete': {},
+        'df_features': {},
+        'variables': {}
+    }
+    register_env("TradingEnv-v0", lambda config: TradingEnv(config))
     # $
     # > chumbar aqui e depois limpar no rollout()
     # ? tem que estar de um jeito que de pra rodar apartir desse arquivo
 
-    config = generate_config('/path/to/checkpoint')
+    config = generate_config('/home/lucas/Documents/new_nostradamus/results/teste_do_rollout/1_2019-10-05_20-45-58nxzjv1tc/checkpoint_10/checkpoint-10')
     cls = get_agent_class('PPO')                          # ? pq cls fica dessa cor ?
     agent = cls(env='TradingEnv-v0', config=config)
-    agent.restore('/path/to/checkpoint')
+    agent.restore('/home/lucas/Documents/new_nostradamus/results/teste_do_rollout/1_2019-10-05_20-45-58nxzjv1tc/checkpoint_10/checkpoint-10')
     df = ['we', 'must', 'define']
     num_steps = int(len(df))
     no_render = False
