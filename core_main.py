@@ -77,7 +77,7 @@ class Nostradamus:
         return os.getcwd() + '/results'
 
     def trial_name_string(self, trial):
-        return str('trial_name_string_from_line_78')
+        return str('1')
 
     def train(self, algo='PPO', timesteps=3e10, checkpoint_freq=100, lr_schedule=[[[0, 7e-5], [3e10, 7e-6]]]):
         register_env("YesMan-v1", lambda config: TradingEnv(config))
@@ -85,7 +85,7 @@ class Nostradamus:
 
         self.generate_config_spec(lr_schedule=lr_schedule, df_type='train')
 
-        run(name="experiment_name",
+        run(name="teste_do_rollout",
             run_or_experiment=algo,
             stop={'timesteps_total': timesteps},
             checkpoint_freq=checkpoint_freq,
