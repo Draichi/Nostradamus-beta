@@ -23,6 +23,7 @@ class TradingEnv(gym.Env):
         self.df_features = config['df_features']
         self.initial_balance = config['variables']['initial_account_balance']
         self.commission = config['variables']['commission']
+        self.variables = config['variables']
         self.shares_held = {}
         self.shares_bought = {}
         self.shares_sold = {}
@@ -220,11 +221,16 @@ class TradingEnv(gym.Env):
 
         # file.close()
 
+    # *--------------------------------------------------------------------
+    # * tirar o visualization.render() e trabalhar no rollout.py primeiro?
+    # *--------------------------------------------------------------------
+
     def render(self, mode='live', **kwargs):
-        pass
         if self.visualization == None:
-            self.visualization = GraphGenerator(assets=self.assets_list, currency=self.currency, granularity=self.granularity, datapoints=self.datapoints, df_complete=self.df_complete, df_features=self.df_features)
+            self.visualization = GraphGenerator(assets=self.assets_list, currency=self.currency, granularity=self.granularity,
+                                                datapoints=self.datapoints, df_complete=self.df_complete, df_features=self.df_features, variables=self.variables)
         self.visualization.render()
+
         # Render the environment to the screen
         # if mode == 'file':
         #     self._render_to_file(kwargs.get('filename', 'render.txt'))
