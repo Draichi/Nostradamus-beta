@@ -7,8 +7,8 @@ if __name__ == '__main__':
                       granularity='day',
                       datapoints=600)
 
-    env.train(timesteps=5e5,
-              checkpoint_freq=30,
+    env.train(timesteps=5e4,
+              checkpoint_freq=10,
               lr_schedule=[
                   [
                       [0, 7e-5],  # [timestep, lr]
