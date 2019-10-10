@@ -16,7 +16,8 @@ class TradingEnv(gym.Env):
     def __init__(self, config):
         self.assets = config['assets'],
         self.assets_list = self.assets[0]
-        self.currency = config['currency'],
+        self.currency_list = config['currency'],
+        self.currency = self.currency_list[0]
         self.granularity = config['granularity'],
         self.datapoints = config['datapoints']
         self.df_complete = config['df_complete']
@@ -227,7 +228,7 @@ class TradingEnv(gym.Env):
 
     def render(self, mode='live', **kwargs):
         if self.visualization == None:
-            self.visualization = GraphGenerator(assets=self.assets_list, currency=self.currency, granularity=self.granularity,
+            self.visualization = GraphGenerator(assets=self.assets_list, currency=self.currency, granularity=self.granularity[0],
                                                 datapoints=self.datapoints, df_complete=self.df_complete, df_features=self.df_features, variables=self.variables)
         self.visualization.render()
 

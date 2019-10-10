@@ -26,7 +26,9 @@ from ray.tune.util import merge_dicts
 # ! register_env("pa_cartpole", lambda _: ParametricActionCartpole(10))
 
 
-def generate_config(checkpoint):
+
+# @ esse metodo tem que ir junto para core_main
+def get_instruments_from_checkpoint(checkpoint):
     config = {}
     # Load configuration from file
     config_dir = os.path.dirname(checkpoint)
@@ -40,9 +42,33 @@ def generate_config(checkpoint):
     else:
         with open(config_path, "rb") as f:
             config = pickle.load(f)
+    if config['env_config']:
+        env_config = config['env_config']
+        if env_config['assets']:
+            assets = env_config['assets']
+        else:
+            raise ValueError('assets does not exists in env_config')
+        if env_config['currency']:
+            currency = env_config['currency']
+        else:
+            raise ValueError('currency does not exists in env_config')
+        if env_config['datapoints']:
+            datapoints = env_config['datapoints']
+        else:
+            raise ValueError('datapoints does not exists in env_config')
+        if env_config['granularity']:
+            granularity = env_config['granularity']
+        else:
+            raise ValueError('granularity does not exists in env_config')
+        if env_config['variables']:
+            variables = env_config['variables']
+        else:
+            raise ValueError('variables does not exists in env_config')
+    else:
+        raise ValueError('env_config does not exists in params.pkl')
     if "num_workers" in config:
         config["num_workers"] = min(2, config["num_workers"])
-    return config
+    return config, assets, currency, datapoints, granularity, variables
 
 class DefaultMapping(collections.defaultdict):
     """default_factory now takes as an argument the missing key."""
@@ -138,15 +164,14 @@ def rollout(agent, env_name, num_steps, no_render=True):
             obs = next_obs
         print("Episode reward", reward_total)
 
-
-
 if __name__ == "__main__":
     from core_env import TradingEnv
-    ray.init()
-    assets = False
-    currency = False
-    granularity = False
-    datapoints = False
+    from utils import get_datasets
+
+    checkpoint_path = '/home/lucas/Documents/new_nostradamus/results/teste_do_rollout/1_2019-10-05_20-45-58nxzjv1tc/checkpoint_10/checkpoint-10'
+    agent_config, assets, currency, datapoints, granularity, variables = get_instruments_from_checkpoint(checkpoint_path)
+    
+    # > isso tudo tem que vir em core_main.py
     config = {
         'assets': assets,
         'currency': currency,
@@ -154,18 +179,32 @@ if __name__ == "__main__":
         'datapoints': datapoints,
         'df_complete': {},
         'df_features': {},
-        'variables': {}
+        'variables': variables
     }
-    register_env("TradingEnv-v0", lambda config: TradingEnv(config))
-    # $
-    # > chumbar aqui e depois limpar no rollout()
-    # ? tem que estar de um jeito que de pra rodar apartir desse arquivo
 
-    config = generate_config('/home/lucas/Documents/new_nostradamus/results/teste_do_rollout/1_2019-10-05_20-45-58nxzjv1tc/checkpoint_10/checkpoint-10')
+    df = {}
+    for asset in assets:
+        df[asset] = {}
+        _, df[asset]['rollout'] = get_datasets(asset=asset,
+                                               currency=currency,
+                                               granularity=granularity,
+                                               datapoints=datapoints)
+
+    for asset in assets:
+        config['df_complete'][asset] = df[asset]['rollout']
+        config['df_features'][asset] = df[asset]['rollout'].loc[:, df[asset]['rollout'].columns != 'Date']
+
+    env_name = 'YesMan-v1'
+
+    register_env(env_name, lambda config: TradingEnv(config))
+    ray.init()
     cls = get_agent_class('PPO')                          # ? pq cls fica dessa cor ?
-    agent = cls(env='TradingEnv-v0', config=config)
-    agent.restore('/home/lucas/Documents/new_nostradamus/results/teste_do_rollout/1_2019-10-05_20-45-58nxzjv1tc/checkpoint_10/checkpoint-10')
-    df = ['we', 'must', 'define']
-    num_steps = int(len(df))
+    agent = cls(env=env_name, config=agent_config)
+    agent.restore(checkpoint_path)
+    
+    num_steps = int(len(config['df_complete'][assets[0]]))
     no_render = False
-    rollout(agent, 'TradingEnv-v0', num_steps, no_render)
+
+    rollout(agent, env_name, num_steps, no_render)
+
+    # $ esse codigo esta indo bem até o core_render lá tem um quit()
