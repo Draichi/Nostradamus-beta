@@ -9,9 +9,17 @@ from mpl_finance import candlestick_ochl as candlestick
 
 style.use('dark_background')
 
+BUY_N_HOLD_COLOR = '#fffff'
+BOT_COLOR = '#ccc'
+BALANCE_COLOR = '#333'
+UP_COLOR = '#fffff'
+DOWN_COLOR = '#ccc'
+VOLUME_CHART_HEIGHT = 0.33
+
 def date2num(date):
     converter = mdates.datestr2num(date)
     return converter
+
 
 class GraphGenerator:
     """A stock trading visualization using matplotlib made to render OpenAI gym environments"""
@@ -64,10 +72,6 @@ class GraphGenerator:
         # ? Show the graph without blocking the rest of the program
         plt.show(block=False)
 
-        # $
-        # $ CONTINUAR DAQUI
-        # $
-
     def _render_net_worth(self, current_step, net_worth, buy_and_hold, step_range, dates):
         # Clear the frame rendered last step
         self.net_worth_ax.clear()
@@ -85,8 +89,8 @@ class GraphGenerator:
         y = [buy_and_hold, net_worth]
         self.net_worth_ax.bar(x, y, color=[BUY_N_HOLD_COLOR, BOT_COLOR])
         self.net_worth_ax.set_title(
-            "Net Worth ({})".format(self.trade_instrument))
-        self.net_worth_ax.set_xticklabels(('', 'HODL', '', 'Bot'))
+            "Net Worth ({})".format(self.currency))
+        self.net_worth_ax.set_xticklabels(('oi', 'HODL', 'oi', 'Bot'))
 
         # Annotate the current net worth on the net worth graph
         self.net_worth_ax.annotate("{0:.2f}".format(buy_and_hold),
@@ -104,7 +108,7 @@ class GraphGenerator:
                                    color="black",
                                    fontsize="small")
 
-    def _render_balance(self, shares_held1, shares_held2, shares_held3, balance):
+    def _render_balance(self, shares_held, balance):
         # Clear the frame rendered last step
         self.balance_ax.clear()
         # compute performance
@@ -117,136 +121,59 @@ class GraphGenerator:
         #                       transform=self.net_worth_ax.transAxes,
         #                       color='green' if percentage_diff > 0 else 'red', fontsize=15)
         x = np.arange(4)
-        y = [shares_held1, shares_held2, shares_held3, balance]
+        y = [shares_held[asset] for asset in self.assets]
+        y.append(balance)
+        # y = [shares_held1, shares_held2, shares_held3, balance]
         self.balance_ax.bar(x, y, color=BALANCE_COLOR)
         self.balance_ax.set_title("Balance")
-        self.balance_ax.set_xticklabels(
-            ('', self.first_coin, self.second_coin, self.thrid_coin, self.trade_instrument))
+        labels = self.assets
+        labels.append(self.currency)
+        # self.balance_ax.set_xticklabels(
+        #     ('', self.first_coin, self.second_coin, self.thrid_coin, self.trade_instrument))
+        self.balance_ax.set_xticklabels(labels)
 
-        # Annotate the current net worth on the net worth graph
-        self.balance_ax.annotate("{0:.3f}".format(shares_held1),
-                                 xy=(0, shares_held1),
-                                 xytext=(0, shares_held1),
-                                 bbox=dict(boxstyle='round',
-                                           fc='w', ec='k', lw=1),
-                                 color="black",
-                                 fontsize="small")
-        self.balance_ax.annotate("{0:.3f}".format(shares_held2),
-                                 xy=(1, shares_held2),
-                                 xytext=(1, shares_held2),
-                                 bbox=dict(boxstyle='round',
-                                           fc='w', ec='k', lw=1),
-                                 color="black",
-                                 fontsize="small")
-        self.balance_ax.annotate("{0:.3f}".format(shares_held3),
-                                 xy=(2, shares_held3),
-                                 xytext=(2, shares_held3),
-                                 bbox=dict(boxstyle='round',
-                                           fc='w', ec='k', lw=1),
-                                 color="black",
-                                 fontsize="small")
+        for index, asset in enumerate(self.assets):
+            self.balance_ax.annotate(text="{0:.3f}".format(shares_held[asset]), xy=(index, shares_held[asset]), xytext=(
+                index, shares_held[asset]), bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), color='black', fontsize='small')
         self.balance_ax.annotate("{0:.3f}".format(balance),
-                                 xy=(3, balance),
-                                 xytext=(3, balance),
+                                 xy=(len(self.assets), balance),
+                                 xytext=(len(self.assets), balance),
                                  bbox=dict(boxstyle='round',
                                            fc='w', ec='k', lw=1),
                                  color="black",
                                  fontsize="small")
 
     def _render_price(self, current_step, net_worth, dates, step_range):
-        self.price_ax1.clear()
-        self.price_ax2.clear()
-        self.price_ax3.clear()
-        self.price_ax1.set_title('Candlesticks')
-
-        candlesticks1 = zip(dates,
-                            self.df1['open'].values[step_range],
-                            self.df1['close'].values[step_range],
-                            self.df1['high'].values[step_range],
-                            self.df1['low'].values[step_range])
-        candlesticks2 = zip(dates,
-                            self.df2['open'].values[step_range],
-                            self.df2['close'].values[step_range],
-                            self.df2['high'].values[step_range],
-                            self.df2['low'].values[step_range])
-        candlesticks3 = zip(dates,
-                            self.df3['open'].values[step_range],
-                            self.df3['close'].values[step_range],
-                            self.df3['high'].values[step_range],
-                            self.df3['low'].values[step_range])
-
-        # Plot price using candlestick graph from mpl_finance
-        candlestick(self.price_ax1,
-                    candlesticks1,
-                    width=self.candlestick_width,
-                    colorup=UP_COLOR,
-                    colordown=DOWN_COLOR)
-        candlestick(self.price_ax2,
-                    candlesticks2,
-                    width=self.candlestick_width,
-                    colorup=UP_COLOR,
-                    colordown=DOWN_COLOR)
-        candlestick(self.price_ax3,
-                    candlesticks3,
-                    width=self.candlestick_width,
-                    colorup=UP_COLOR,
-                    colordown=DOWN_COLOR)
-
-        last_date = date2num(self.df1['Date'].values[current_step])
-        last_close1 = self.df1['close'].values[current_step]
-        last_high1 = self.df1['high'].values[current_step]
-        last_close2 = self.df2['close'].values[current_step]
-        last_high2 = self.df2['high'].values[current_step]
-        last_close3 = self.df3['close'].values[current_step]
-        last_high3 = self.df3['high'].values[current_step]
-
-        # Print the current price to the price axis
-        self.price_ax1.annotate('{0:.4f}'.format(last_close1),
-                                xy=(last_date, last_close1),
-                                xytext=(last_date, last_high1),
-                                bbox=dict(boxstyle='round',
-                                          fc='w',
-                                          ec='k',
-                                          lw=1),
-                                color="black",
-                                fontsize="small")
-        self.price_ax2.annotate('{0:.4f}'.format(last_close2),
-                                xy=(last_date, last_close2),
-                                xytext=(last_date, last_high2),
-                                bbox=dict(boxstyle='round',
-                                          fc='w',
-                                          ec='k',
-                                          lw=1),
-                                color="black",
-                                fontsize="small")
-        self.price_ax3.annotate('{0:.4f}'.format(last_close3),
-                                xy=(last_date, last_close3),
-                                xytext=(last_date, last_high3),
-                                bbox=dict(boxstyle='round',
-                                          fc='w',
-                                          ec='k',
-                                          lw=1),
-                                color="black",
-                                fontsize="small")
-
-        # Shift price axis up to give volume chart space
-        ylim1 = self.price_ax1.get_ylim()
-        ylim2 = self.price_ax2.get_ylim()
-        ylim3 = self.price_ax3.get_ylim()
-
-        self.price_ax1.set_ylim(
-            ylim1[0] - (ylim1[1] - ylim1[0]) * VOLUME_CHART_HEIGHT, ylim1[1])
-        self.price_ax2.set_ylim(
-            ylim2[0] - (ylim2[1] - ylim2[0]) * VOLUME_CHART_HEIGHT, ylim2[1])
-        self.price_ax3.set_ylim(
-            ylim3[0] - (ylim3[1] - ylim3[0]) * VOLUME_CHART_HEIGHT, ylim3[1])
-
-        self.price_ax1.set_ylabel(
-            '{}/{}'.format(self.first_coin, self.trade_instrument))
-        self.price_ax2.set_ylabel(
-            '{}/{}'.format(self.second_coin, self.trade_instrument))
-        self.price_ax3.set_ylabel(
-            '{}/{}'.format(self.thrid_coin, self.trade_instrument))
+        candlesticks = {}
+        last_dates = {}
+        last_closes = {}
+        last_highs = {}
+        last_closes = {}
+        y_limit = {}
+        for index, asset in enumerate(self.assets):
+            if index == 0:
+                self.price_axs[asset].set_title(
+                    'Candlesticks')  # ? this can go out?
+            self.price_axs[asset].clear()
+            candlesticks[asset] = zip(dates,
+                                      self.df_features[asset]['open'].values[step_range],
+                                      self.df_features[asset]['close'].values[step_range],
+                                      self.df_features[asset]['high'].values[step_range],
+                                      self.df_features[asset]['low'].values[step_range])
+            candlestick(self.price_axs[asset],
+                        candlesticks[asset],
+                        width=self.candlestick_width,
+                        colorup=UP_COLOR,
+                        colordown=DOWN_COLOR)
+            last_dates[asset] = date2num(
+                self.df_complete[asset]['Date'].values[current_step])
+            last_closes[asset] = self.df_features['close'].values[current_step]
+            last_highs[asset] = self.df_features['high'].values[current_step]
+            self.price_axs[asset].annotate(text="{0:.4f}".format(last_closes[asset]), xy=(
+                last_dates[asset], last_closes[asset]), xytext=(last_dates[asset], last_highs[asset]), bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), color='black', fontsize='small')
+            y_limit[asset] = self.price_axs[asset].get_ylim()
+            self.price_axs[asset].set_ylim(y_limit[asset][0] - (y_limit[asset][1] - y_limit[asset][0]) * VOLUME_CHART_HEIGHT, y_limit[asset][1])
+            self.price_axs[asset].set_ylabel('{}/{}'.format(asset, self.currency))
 
     def _render_volume(self, current_step, net_worth, dates, step_range):
         self.volume_ax1.clear()
@@ -387,7 +314,8 @@ class GraphGenerator:
                                         color=color,
                                         fontsize=8)
 
-    def render(self, current_step, net_worth, buy_and_hold, trades1, trades2, trades3, shares_held1, shares_held2, shares_held3, balance, window_size):
+    def render(self, current_step, net_worth, buy_and_hold, trades, shares_held, balance, window_size):
+        # $ troquei trades1..2... por trades
         self.net_worths[current_step] = net_worth
         self.buy_and_holds[current_step] = buy_and_hold
 
@@ -396,29 +324,42 @@ class GraphGenerator:
 
         # Format dates as timestamps, necessary for candlestick graph
         dates = np.array([date2num(x)
-                          for x in self.df1['Date'].values[step_range]])
+                          for x in self.df_complete[self.assets[0]]['Date'].values[step_range]])
 
         self._render_net_worth(current_step, net_worth,
                                buy_and_hold, step_range, dates)
-        self._render_balance(shares_held1, shares_held2, shares_held3, balance)
+
+        self._render_balance(shares_held, balance)
         self._render_price(current_step, net_worth, dates, step_range)
+        # $
+        # $ CONTINUAR DAQUI
+        # $
         self._render_volume(current_step, net_worth, dates, step_range)
-        self._render_trades(current_step, trades1,
-                            trades2, trades3, step_range)
+        self._render_trades(current_step, trades, step_range)
 
         # Format the date ticks to be more easily read
-        self.price_ax1.set_xticklabels(self.df1['Date'].values[step_range], rotation=45,
-                                       horizontalalignment='right')
-        self.price_ax2.set_xticklabels(self.df2['Date'].values[step_range], rotation=45,
-                                       horizontalalignment='right')
-        self.price_ax3.set_xticklabels(self.df3['Date'].values[step_range], rotation=45,
-                                       horizontalalignment='right')
+        last_asset_index = len(self.assets) - 1
+        for index, asset in enumerate(self.assets):
+            self.price_axs[asset].set_xticklabels(
+                self.df_complete[asset]['Date'].values[step_range], rotation=45, horizontalalignment='right')
+        # self.price_ax1.set_xticklabels(self.df1['Date'].values[step_range], rotation=45,
+        #                                horizontalalignment='right')
+        # self.price_ax2.set_xticklabels(self.df2['Date'].values[step_range], rotation=45,
+        #                                horizontalalignment='right')
+        # self.price_ax3.set_xticklabels(self.df3['Date'].values[step_range], rotation=45,
+        #                                horizontalalignment='right')
 
         # Hide duplicate net worth date labels
-        plt.setp(self.volume_ax1.get_xticklabels(), visible=False)
-        plt.setp(self.volume_ax2.get_xticklabels(), visible=False)
-        plt.setp(self.price_ax1.get_xticklabels(), visible=False)
-        plt.setp(self.price_ax2.get_xticklabels(), visible=False)
+            if not index == last_asset_index:
+                plt.setp(
+                    self.volume_axs[asset].get_xticklabels(), visible=False)
+                plt.setp(
+                    self.price_axs[asset].get_xticklabels(), visible=False)
+
+        # plt.setp(self.volume_ax1.get_xticklabels(), visible=False)
+        # plt.setp(self.volume_ax2.get_xticklabels(), visible=False)
+        # plt.setp(self.price_ax1.get_xticklabels(), visible=False)
+        # plt.setp(self.price_ax2.get_xticklabels(), visible=False)
 
         # Necessary to view frames before they are unrendered
         plt.pause(0.001)
