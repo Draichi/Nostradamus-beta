@@ -9,6 +9,7 @@ import colorama
 from core_render import GraphGenerator
 
 colorama.init()
+WINDOW_SIZE = 40
 
 class TradingEnv(gym.Env):
     visualization = None
@@ -230,7 +231,8 @@ class TradingEnv(gym.Env):
         if self.visualization == None:
             self.visualization = GraphGenerator(assets=self.assets_list, currency=self.currency, granularity=self.granularity[0],
                                                 datapoints=self.datapoints, df_complete=self.df_complete, df_features=self.df_features, variables=self.variables)
-        self.visualization.render()
+        self.visualization.render(current_step=self.current_step, net_worth=self.net_worth, buy_and_hold=self.buy_and_hold,
+                                  trades=self.trades, shares_held=self.shares_held, balance=self.balance, window_size=WINDOW_SIZE)
 
         # Render the environment to the screen
         # if mode == 'file':
