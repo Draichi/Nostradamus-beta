@@ -15,6 +15,8 @@ BALANCE_COLOR = '#44a769'
 UP_COLOR = '#FFFFFF'
 DOWN_COLOR = '#44a769'
 VOLUME_CHART_HEIGHT = 0.33
+UP_TEXT_COLOR = '#44a769'
+DOWN_TEXT_COLOR = '#FFFFFF'
 
 
 def date2num(date):
@@ -62,8 +64,6 @@ class GraphGenerator:
         self.balance_ax.yaxis.tick_right()
 
         for index, asset in enumerate(assets):
-        #     print(index, asset)
-        # quit()
             self.price_axs[asset] = plt.subplot2grid((canvas_x_size, canvas_y_size), (len(
                 assets) * index, 0), rowspan=rowspan, colspan=colspan)
             self.volume_axs[asset] = self.price_axs[asset].twinx()
@@ -114,41 +114,18 @@ class GraphGenerator:
     def _render_balance(self, shares_held, balance):
         # Clear the frame rendered last step
         self.balance_ax.clear()
-        # compute performance
-        # abs_diff = net_worth - buy_and_hold
-        # avg = (net_worth + buy_and_hold) / 2
-        # percentage_diff = abs_diff / avg * 100
-        # print performance
-        # self.net_worth_ax.text(0.95, 0.01, '{0:.2f}%'.format(percentage_diff),
-        #                       verticalalignment='bottom', horizontalalignment='right',
-        #                       transform=self.net_worth_ax.transAxes,
-        #                       color='green' if percentage_diff > 0 else 'red', fontsize=15)
         x = np.arange(4)
         y = [shares_held[asset] for asset in self.assets]
         y.append(balance)
-        # y = [shares_held1, shares_held2, shares_held3, balance]
         self.balance_ax.bar(x, y, color=BALANCE_COLOR)
         self.balance_ax.set_title("Balance")
-        # labels = self.assets
         labels = ('',)
         for asset in self.assets:
             labels += (asset, )
         labels += (self.currency, )
-        # print('labels')
-        # print(labels)
-        # quit()
-        # self.balance_ax.set_xticklabels(
-        #     ('', self.first_coin, self.second_coin, self.thrid_coin, self.trade_instrument))
         self.balance_ax.set_xticklabels(labels)
 
         for index, asset in enumerate(self.assets):
-            # print('\n\n\n\n\n')
-            # print(index, asset)
-            # print(self.assets)
-            # print('shares_held[asset]')
-            # print(shares_held[asset])
-            # print('shares_held[asset]')
-            # print('\n\n\n\n\n')
             self.balance_ax.annotate("{0:.3f}".format(shares_held[asset]), xy=(index, shares_held[asset]), xytext=(
                 index, shares_held[asset]), bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), color='black', fontsize='small')
         self.balance_ax.annotate("{0:.3f}".format(balance),
@@ -193,146 +170,40 @@ class GraphGenerator:
                 '{}/{}'.format(asset, self.currency))
 
     def _render_volume(self, current_step, net_worth, dates, step_range):
-        self.volume_ax1.clear()
-        self.volume_ax2.clear()
-        self.volume_ax3.clear()
+        volumes = {}
+        pos = {}
+        neg = {}
+        for asset in self.assets:
+            self.volume_axs[asset].clear()
+            volumes[asset] = np.array(self.df_complete[asset]['volumefrom'].values[step_range])
+            pos[asset] = self.df_complete[asset]['open'].values[step_range] - self.df_complete[asset]['close'].values[step_range] < 0
+            neg[asset] = self.df_complete[asset]['open'].values[step_range] - self.df_complete[asset]['close'].values[step_range] > 0
+            self.volume_axs[asset].bar(dates[pos[asset]], volumes[asset][pos[asset]], color=UP_COLOR, alpha=0.4, width=self.candlestick_width, align='center')
+            self.volume_axs[asset].bar(dates[neg[asset]], volumes[asset][neg[asset]], color=DOWN_COLOR, alpha=0.4, width=self.candlestick_width, align='center')
+            # > Cap volume axis height below price chart and hide ticks
+            self.volume_axs[asset].set_ylim(0, max(volumes[asset]) / VOLUME_CHART_HEIGHT)
+            self.volume_axs[asset].yaxis.set_ticks([])
 
-        volume1 = np.array(self.df1['volumefrom'].values[step_range])
-        volume2 = np.array(self.df2['volumefrom'].values[step_range])
-        volume3 = np.array(self.df3['volumefrom'].values[step_range])
-
-        pos1 = self.df1['open'].values[step_range] - \
-            self.df1['close'].values[step_range] < 0
-        neg1 = self.df1['open'].values[step_range] - \
-            self.df1['close'].values[step_range] > 0
-        pos2 = self.df2['open'].values[step_range] - \
-            self.df2['close'].values[step_range] < 0
-        neg2 = self.df2['open'].values[step_range] - \
-            self.df2['close'].values[step_range] > 0
-        pos3 = self.df3['open'].values[step_range] - \
-            self.df3['close'].values[step_range] < 0
-        neg3 = self.df3['open'].values[step_range] - \
-            self.df3['close'].values[step_range] > 0
-
-        # Color volume bars based on price direction on that date
-        self.volume_ax1.bar(dates[pos1],
-                            volume1[pos1],
-                            color=UP_COLOR,
-                            alpha=0.4,
-                            width=self.candlestick_width,
-                            align='center')
-        self.volume_ax1.bar(dates[neg1],
-                            volume1[neg1],
-                            color=DOWN_COLOR,
-                            alpha=0.4,
-                            width=self.candlestick_width,
-                            align='center')
-        self.volume_ax2.bar(dates[pos2],
-                            volume2[pos2],
-                            color=UP_COLOR,
-                            alpha=0.4,
-                            width=self.candlestick_width,
-                            align='center')
-        self.volume_ax2.bar(dates[neg2],
-                            volume2[neg2],
-                            color=DOWN_COLOR,
-                            alpha=0.4,
-                            width=self.candlestick_width,
-                            align='center')
-        self.volume_ax3.bar(dates[pos3],
-                            volume3[pos3],
-                            color=UP_COLOR,
-                            alpha=0.4,
-                            width=self.candlestick_width,
-                            align='center')
-        self.volume_ax3.bar(dates[neg3],
-                            volume3[neg3],
-                            color=DOWN_COLOR,
-                            alpha=0.4,
-                            width=self.candlestick_width,
-                            align='center')
-
-        # Cap volume axis height below price chart and hide ticks
-        self.volume_ax1.set_ylim(0, max(volume1) / VOLUME_CHART_HEIGHT)
-        self.volume_ax2.set_ylim(0, max(volume2) / VOLUME_CHART_HEIGHT)
-        self.volume_ax3.set_ylim(0, max(volume3) / VOLUME_CHART_HEIGHT)
-        self.volume_ax1.yaxis.set_ticks([])
-        self.volume_ax2.yaxis.set_ticks([])
-        self.volume_ax3.yaxis.set_ticks([])
-
-    # repeated code, need to refactor
-    def _render_trades(self, current_step, trades1, trades2, trades3, step_range):
-        for trade in trades1:
-            if trade['step'] in step_range:
-                date = date2num(self.df1['Date'].values[trade['step']])
-                high = self.df1['high'].values[trade['step']]
-                low = self.df1['low'].values[trade['step']]
-                if trade['type'] == 'buy':
-                    high_low = low
-                    color = UP_TEXT_COLOR
-                    marker = '^'
-                else:
-                    high_low = high
-                    color = DOWN_TEXT_COLOR
-                    marker = 'v'
-                total = '{0:.5f}'.format(trade['total'])
-                self.price_ax1.scatter(
-                    date, high_low, color=color, marker=marker, s=50)
-                # Print the current price to the price axis
-                self.price_ax1.annotate('{} {}'.format(total, self.trade_instrument),
-                                        xy=(date, high_low),
-                                        xytext=(date, high_low),
-                                        color=color,
-                                        fontsize=8)
-
-        for trade in trades2:
-            if trade['step'] in step_range:
-                date = date2num(self.df1['Date'].values[trade['step']])
-                high = self.df2['high'].values[trade['step']]
-                low = self.df2['low'].values[trade['step']]
-                if trade['type'] == 'buy':
-                    high_low = low
-                    color = UP_TEXT_COLOR
-                    marker = '^'
-                else:
-                    high_low = high
-                    color = DOWN_TEXT_COLOR
-                    marker = 'v'
-                total = '{0:.5f}'.format(trade['total'])
-                self.price_ax2.scatter(
-                    date, high_low, color=color, marker=marker, s=50)
-                # Print the current price to the price axis
-                self.price_ax2.annotate('{} {}'.format(total, self.trade_instrument),
-                                        xy=(date, high_low),
-                                        xytext=(date, high_low),
-                                        color=color,
-                                        fontsize=8)
-
-        for trade in trades3:
-            if trade['step'] in step_range:
-                date = date2num(self.df1['Date'].values[trade['step']])
-                high = self.df3['high'].values[trade['step']]
-                low = self.df3['low'].values[trade['step']]
-                if trade['type'] == 'buy':
-                    high_low = low
-                    color = UP_TEXT_COLOR
-                    marker = '^'
-                else:
-                    high_low = high
-                    color = DOWN_TEXT_COLOR
-                    marker = 'v'
-                total = '{0:.5f}'.format(trade['total'])
-                self.price_ax3.scatter(
-                    date, high_low, color=color, marker=marker, s=50)
-                # Print the current price to the price axis
-                self.price_ax3.annotate('{} {}'.format(total, self.trade_instrument),
-                                        xy=(date, high_low),
-                                        xytext=(date, high_low),
-                                        color=color,
-                                        fontsize=8)
+    def _render_trades(self, current_step, trades, step_range):
+        for asset in self.assets:
+            for trade in trades[asset]:
+                if trade['step'] in step_range:
+                    date = date2num(self.df_complete[asset]['Date'].values[trade['step']])
+                    high = self.df_complete[asset]['high'].values[trade['step']]
+                    low = self.df_complete[asset]['low'].values[trade['step']]
+                    if trade['type'] == 'buy':
+                        high_low = low
+                        color = UP_TEXT_COLOR
+                        marker = '^'
+                    else:
+                        high_low = high
+                        color = DOWN_TEXT_COLOR
+                        marker = 'v'
+                    total = '{0:.5f}'.format(trade['total'])
+                    self.price_axs[asset].scatter(date, high_low, color=color, marker=marker, s=50)
+                    self.price_axs[asset].annotate('{} {}'.format(total, self.currency), xy=(date, high_low), xytext=(date, high_low), color=color, fontsize=8)
 
     def render(self, current_step, net_worth, buy_and_hold, trades, shares_held, balance, window_size):
-        # $ troquei trades1..2... por trades
         self.net_worths[current_step] = net_worth
         self.buy_and_holds[current_step] = buy_and_hold
 
@@ -348,23 +219,14 @@ class GraphGenerator:
 
         self._render_balance(shares_held, balance)
         self._render_price(current_step, net_worth, dates, step_range)
-        # $
-        # $ CONTINUAR DAQUI
-        # $
-        # self._render_volume(current_step, net_worth, dates, step_range)
-        # self._render_trades(current_step, trades, step_range)
+        self._render_volume(current_step, net_worth, dates, step_range)
+        self._render_trades(current_step, trades, step_range)
 
         # Format the date ticks to be more easily read
         last_asset_index = len(self.assets) - 1
         for index, asset in enumerate(self.assets):
             self.price_axs[asset].set_xticklabels(
                 self.df_complete[asset]['Date'].values[step_range], rotation=45, horizontalalignment='right')
-        # self.price_ax1.set_xticklabels(self.df1['Date'].values[step_range], rotation=45,
-        #                                horizontalalignment='right')
-        # self.price_ax2.set_xticklabels(self.df2['Date'].values[step_range], rotation=45,
-        #                                horizontalalignment='right')
-        # self.price_ax3.set_xticklabels(self.df3['Date'].values[step_range], rotation=45,
-        #                                horizontalalignment='right')
 
         # Hide duplicate net worth date labels
             if not index == last_asset_index:
@@ -372,11 +234,6 @@ class GraphGenerator:
                     self.volume_axs[asset].get_xticklabels(), visible=False)
                 plt.setp(
                     self.price_axs[asset].get_xticklabels(), visible=False)
-
-        # plt.setp(self.volume_ax1.get_xticklabels(), visible=False)
-        # plt.setp(self.volume_ax2.get_xticklabels(), visible=False)
-        # plt.setp(self.price_ax1.get_xticklabels(), visible=False)
-        # plt.setp(self.price_ax2.get_xticklabels(), visible=False)
 
         # Necessary to view frames before they are unrendered
         plt.pause(0.001)
