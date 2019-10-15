@@ -9,12 +9,13 @@ from mpl_finance import candlestick_ochl as candlestick
 
 style.use('dark_background')
 
-BUY_N_HOLD_COLOR = '#fffff'
-BOT_COLOR = '#ccc'
-BALANCE_COLOR = '#333'
-UP_COLOR = '#fffff'
-DOWN_COLOR = '#ccc'
+BUY_N_HOLD_COLOR = '#FFFFFF'
+BOT_COLOR = '#44a769'
+BALANCE_COLOR = '#44a769'
+UP_COLOR = '#FFFFFF'
+DOWN_COLOR = '#44a769'
 VOLUME_CHART_HEIGHT = 0.33
+
 
 def date2num(date):
     converter = mdates.datestr2num(date)
@@ -61,8 +62,10 @@ class GraphGenerator:
         self.balance_ax.yaxis.tick_right()
 
         for index, asset in enumerate(assets):
+        #     print(index, asset)
+        # quit()
             self.price_axs[asset] = plt.subplot2grid((canvas_x_size, canvas_y_size), (len(
-                assets) * index, 0), rowspan=rowspan, colspan=colspan, sharex=self.price_axs[assets[0]] if index > 0 else False)
+                assets) * index, 0), rowspan=rowspan, colspan=colspan)
             self.volume_axs[asset] = self.price_axs[asset].twinx()
             self.price_axs[asset].yaxis.tick_right()
 
@@ -126,14 +129,27 @@ class GraphGenerator:
         # y = [shares_held1, shares_held2, shares_held3, balance]
         self.balance_ax.bar(x, y, color=BALANCE_COLOR)
         self.balance_ax.set_title("Balance")
-        labels = self.assets
-        labels.append(self.currency)
+        # labels = self.assets
+        labels = ('',)
+        for asset in self.assets:
+            labels += (asset, )
+        labels += (self.currency, )
+        # print('labels')
+        # print(labels)
+        # quit()
         # self.balance_ax.set_xticklabels(
         #     ('', self.first_coin, self.second_coin, self.thrid_coin, self.trade_instrument))
         self.balance_ax.set_xticklabels(labels)
 
         for index, asset in enumerate(self.assets):
-            self.balance_ax.annotate(text="{0:.3f}".format(shares_held[asset]), xy=(index, shares_held[asset]), xytext=(
+            # print('\n\n\n\n\n')
+            # print(index, asset)
+            # print(self.assets)
+            # print('shares_held[asset]')
+            # print(shares_held[asset])
+            # print('shares_held[asset]')
+            # print('\n\n\n\n\n')
+            self.balance_ax.annotate("{0:.3f}".format(shares_held[asset]), xy=(index, shares_held[asset]), xytext=(
                 index, shares_held[asset]), bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), color='black', fontsize='small')
         self.balance_ax.annotate("{0:.3f}".format(balance),
                                  xy=(len(self.assets), balance),
@@ -148,7 +164,6 @@ class GraphGenerator:
         last_dates = {}
         last_closes = {}
         last_highs = {}
-        last_closes = {}
         y_limit = {}
         for index, asset in enumerate(self.assets):
             if index == 0:
@@ -167,13 +182,15 @@ class GraphGenerator:
                         colordown=DOWN_COLOR)
             last_dates[asset] = date2num(
                 self.df_complete[asset]['Date'].values[current_step])
-            last_closes[asset] = self.df_features['close'].values[current_step]
-            last_highs[asset] = self.df_features['high'].values[current_step]
-            self.price_axs[asset].annotate(text="{0:.4f}".format(last_closes[asset]), xy=(
+            last_closes[asset] = self.df_features[asset]['close'].values[current_step]
+            last_highs[asset] = self.df_features[asset]['high'].values[current_step]
+            self.price_axs[asset].annotate(s="{0:.4f}".format(last_closes[asset]), xy=(
                 last_dates[asset], last_closes[asset]), xytext=(last_dates[asset], last_highs[asset]), bbox=dict(boxstyle='round', fc='w', ec='k', lw=1), color='black', fontsize='small')
             y_limit[asset] = self.price_axs[asset].get_ylim()
-            self.price_axs[asset].set_ylim(y_limit[asset][0] - (y_limit[asset][1] - y_limit[asset][0]) * VOLUME_CHART_HEIGHT, y_limit[asset][1])
-            self.price_axs[asset].set_ylabel('{}/{}'.format(asset, self.currency))
+            self.price_axs[asset].set_ylim(y_limit[asset][0] - (
+                y_limit[asset][1] - y_limit[asset][0]) * VOLUME_CHART_HEIGHT, y_limit[asset][1])
+            self.price_axs[asset].set_ylabel(
+                '{}/{}'.format(asset, self.currency))
 
     def _render_volume(self, current_step, net_worth, dates, step_range):
         self.volume_ax1.clear()
@@ -334,8 +351,8 @@ class GraphGenerator:
         # $
         # $ CONTINUAR DAQUI
         # $
-        self._render_volume(current_step, net_worth, dates, step_range)
-        self._render_trades(current_step, trades, step_range)
+        # self._render_volume(current_step, net_worth, dates, step_range)
+        # self._render_trades(current_step, trades, step_range)
 
         # Format the date ticks to be more easily read
         last_asset_index = len(self.assets) - 1
